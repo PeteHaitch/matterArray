@@ -47,20 +47,12 @@ setMethod("subset_seed_as_array", "matterArraySeed",
 #       make dimnames() on the object returned by matterArraySeed() bring them
 #       back.
 #' @export
-matterArraySeed <- function(data, ...) {
-  if (!missing(data)) {
-    if (is(data, "matter")) {
-      if (!is(data, "matter_mat") && !is(data, "matter_arr")) {
-        stop("Only matter_mat and matter_arr instances are currently supported")
-      }
-      return(S4Vectors::new2("matterArraySeed", matter = data))
-    } else {
-      return(S4Vectors::new2("matterArraySeed",
-                             matter = matter::matter(data, ...)))
-    }
+matterArraySeed <- function(matter) {
+  if (is(matter, "matter") &
+      !is(matter, "matter_mat") && !is(matter, "matter_arr")) {
+    stop("Only matter_mat and matter_arr instances are currently supported")
   }
-  matter <- matter::matter(...)
-  S4Vectors::new2("matterArraySeed", matter = matter)
+  return(S4Vectors::new2("matterArraySeed", matter = matter))
 }
 
 ### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -118,11 +110,11 @@ setMethod("DelayedArray", "matterArraySeed",
 #       called with a single argument.
 #' @importFrom DelayedArray DelayedArray
 #' @export
-matterArray <- function(data, ...) {
-  if (is(data, "matterArraySeed")) {
-    seed <- data
+matterArray <- function(matter) {
+  if (is(matter, "matterArraySeed")) {
+    seed <- matter
   } else {
-    seed <- matterArraySeed(data)
+    seed <- matterArraySeed(matter)
   }
   DelayedArray(seed)
 }
