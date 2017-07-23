@@ -11,8 +11,12 @@
 ###
 
 setClassUnion("integer_OR_NULL", c("integer", "NULL"))
+setClassUnion("numeric_OR_NULL", c("numeric", "NULL"))
 setClassUnion("list_OR_NULL", c("list", "NULL"))
 
+# NOTE: matterRealizationSink is essentially an S4 class to store the
+#       parameters passed to matter::matter_*() functions when writing an
+#       array-like object (data) to a matter file.
 #' @exportClass matterRealizationSink
 setClass("matterRealizationSink",
          contains = "RealizationSink",
@@ -20,12 +24,12 @@ setClass("matterRealizationSink",
            datamode = "factor",
            paths = "character",
            filemode = "character",
-           chunksize = "integer",
+           offset = "numeric_OR_NULL",
+           extent = "numeric_OR_NULL",
            dim = "integer_OR_NULL",
            dimnames = "list_OR_NULL",
            rowMaj = "logical",
-           offset = "numeric",
-           extent = "numeric"
+           chunksize = "integer"
          )
 )
 
@@ -64,11 +68,10 @@ setMethod("extent", "matterRealizationSink", function(x) x@extent)
 # TODO: Investigate the possiblity to write the dimnames to the matter file.
 #' @export
 matterRealizationSink <-
-  function(datamode = "numeric", paths = NULL, filemode = "rb+",
+  function(datamode = "double", paths = NULL, filemode = "rb+",
            chunksize = getOption("DelayedArray.block.size"), dim = NULL,
-           dimnames = NULL, rowMaj = FALSE, offset = NA_real_,
-           extent = NA_real_) {
-    datamode <- matter:::make_datamode(datamode, type = "R")
+           dimnames = NULL, rowMaj = FALSE, offset = NULL, extent = NULL) {
+    datamode <- matter:::make_datamode(datamode, type = "C")
     if (is.null(paths)) {
       paths <- getMatterDumpFile(for.use = TRUE)
     } else {
@@ -106,6 +109,9 @@ setMethod("write_to_sink", c("array", "matterRealizationSink"),
 ### Coercing a matterRealizationSink object.
 ###
 
+# NOTE: This must only be called once the sink has been written to, otherwise
+#       it hangs because of 'bug' reported in matter_issues.md
+# TODO: Add check for the above NOTE
 # TODO: This coercion needs to propagate the dimnames *through* the matter file.
 #       For more details about this, see TODO right before definition of
 #       matterRealizationSink() above in this file and right before definition
@@ -114,53 +120,58 @@ setAs("matterRealizationSink", "matterArraySeed",
       function(from) {
         if (length(dim(from)) == 2L) {
           # NOTE: matrix (2D-array)
-          if (is.na(from@offset) & is.na(extent(from))) {
-            return(matterArraySeed(datamode = as.character(datamode(from)),
-                                   paths = paths(from),
-                                   filemode = filemode(from),
-                                   chunksize = chunksize(from),
-                                   nrow = nrow(from),
-                                   ncol = ncol(from),
-                                   dimnames = dimnames(from),
-                                   rowMaj = rowMaj(from)))
+          if (is.null(from@offset) & is.null(extent(from))) {
+            matter <- matter::matter_mat(datamode = datamode(from),
+                                         paths = paths(from),
+                                         filemode = filemode(from),
+                                         chunksize = chunksize(from),
+                                         nrow = nrow(from),
+                                         ncol = ncol(from),
+                                         dimnames = dimnames(from),
+                                         rowMaj = rowMaj(from))
           } else {
             # NOTE: Advanced usage with non-default extent and offset
-            return(matterArraySeed(datamode = as.character(datamode(from)),
-                                   paths = paths(from),
-                                   filemode = filemode(from),
-                                   chunksize = chunksize(from),
-                                   nrow = nrow(from),
-                                   col = col(from),
-                                   dimnames = dimnames(from),
-                                   rowMaj = rowMaj(from),
-                                   offset = from@offset,
-                                   extent = extent(from)))
+            matter <-
+              matter::matter_mat(datamode = as.character(datamode(from)),
+                                 paths = paths(from),
+                                 filemode = filemode(from),
+                                 chunksize = chunksize(from),
+                                 nrow = nrow(from),
+                                 col = col(from),
+                                 dimnames = dimnames(from),
+                                 rowMaj = rowMaj(from),
+                                 offset = from@offset,
+                                 extent = extent(from))
           }
         } else {
-          if (is.na(from@offset) & is.na(extent(from))) {
-            return(matterArraySeed(datamode = as.character(datamode(from)),
-                                   paths = paths(from),
-                                   filemode = filemode(from),
-                                   chunksize = chunksize(from),
-                                   dim = dim(from),
-                                   dimnames = dimnames(from)))
+          if (is.null(from@offset) & is.null(extent(from))) {
+            matter <-
+              matter::matter_arr(datamode = as.character(datamode(from)),
+                                 paths = paths(from),
+                                 filemode = filemode(from),
+                                 chunksize = chunksize(from),
+                                 dim = dim(from),
+                                 dimnames = dimnames(from))
           } else {
             # NOTE: Advanced usage with non-default extent and offset
-            matterArraySeed(datamode = as.character(datamode(from)),
-                            paths = paths(from),
-                            filemode = filemode(from),
-                            chunksize = chunksize(from),
-                            dim = dim(from),
-                            dimnames = dimnames(from),
-                            offset = from@offest,
-                            extent = extent(from))
+            matter <-
+              matter::matter_arr(datamode = as.character(datamode(from)),
+                                 paths = paths(from),
+                                 filemode = filemode(from),
+                                 chunksize = chunksize(from),
+                                 dim = dim(from),
+                                 dimnames = dimnames(from),
+                                 offset = from@offest,
+                                 extent = extent(from))
           }
         }
+        matterArraySeed(matter)
       }
 )
 
-# TODO: This hangs if no data has been written to the sink because of 'bug'
-#       reported in matter_issues.md
+# NOTE: This must only be called once the sink has been written to, otherwise
+#       it hangs because of 'bug' reported in matter_issues.md
+# TODO: Add check for the above NOTE
 # NOTE: This coercion currently drops the dimnames but will naturally
 #       propagate them when coercion from matterRealizationSink to
 #       matterArraySeed propagates them. See TODO above.
@@ -168,6 +179,8 @@ setAs("matterRealizationSink", "matterArray",
       function(from) matterArray(as(from, "matterArraySeed"))
 )
 
+# NOTE: This must only be called once the sink has been written to, otherwise
+#       it hangs because of 'bug' reported in matter_issues.md
 # TODO: This hangs if no data has been written to the sink because of 'bug'
 #       reported in matter_issues.md
 setAs("matterRealizationSink", "DelayedArray",
@@ -185,23 +198,27 @@ setAs("matterRealizationSink", "DelayedArray",
 ### writeMatterArray()
 ###
 
-# Write the dataset to the current dump if 'file' and 'name' are not specified.
+# Write the dataset to the current dump if 'file' is not specified.
 # Return a matterArray object pointing to the newly written matter dataset on
 # disk.
 #' @importMethodsFrom DelayedArray type write_to_sink
 #' @export
-writeMatterArray <- function(x, file = NULL, rowMaj = FALSE, verbose = FALSE) {
+writeMatterArray <- function(x, paths = NULL, datamode = type(x),
+                             chunksize = getOption("DelayedArray.block.size"),
+                             rowMaj = FALSE, offset = NULL, extent = NULL,
+                             verbose = FALSE) {
   if (!S4Vectors::isTRUEorFALSE(verbose)) {
     stop("'verbose' must be TRUE or FALSE")
   }
-  sink <- matterRealizationSink(
-    datamode = type(x),
-    paths = file,
-    filemode = "rb+",
-    chunksize = getOption("DelayedArray.block.size"),
-    dim = dim(x),
-    dimnames = dimnames(x),
-    rowMaj = rowMaj)
+  sink <- matterRealizationSink(datamode = datamode,
+                                paths = paths,
+                                filemode = "rb+",
+                                chunksize = chunksize,
+                                dim = dim(x),
+                                dimnames = dimnames(x),
+                                rowMaj = rowMaj,
+                                offset = offset,
+                                extent = extent)
   if (verbose) {
     old_verbose <- DelayedArray:::set_verbose_block_processing(verbose)
     on.exit(DelayedArray:::set_verbose_block_processing(old_verbose))

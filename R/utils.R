@@ -8,13 +8,22 @@
 #' @include writeMatterArray.R
 
 ### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-### Wrappers around matter constructor functions
+### Wrappers around matter constructor/writer and reader functions
 ###
 
-# TODO: Use S3 or S4 dispatch?
+matterRead <- function(matter, index) {
+  # NOTE: Need special case for when all elements of index are NULL because
+  #       of how subsetting is implemented for matter objects
+  missing_idx <- S4Vectors:::sapply_isNULL(index)
+  if (all(missing_idx)) {
+    return(matter[])
+  }
+  DelayedArray:::subset_by_Nindex(matter, index)
+}
+
 matterWrite <- function(data, sink) {
   if (is.matrix(data)) {
-    if (is.na(sink@offset) & is.na(extent(sink))) {
+    if (is.null(sink@offset) & is.null(extent(sink))) {
       matter::matter_mat(data = data,
                          datamode = as.character(datamode(sink)),
                          paths = paths(sink),
@@ -22,7 +31,8 @@ matterWrite <- function(data, sink) {
                          nrow = nrow(sink),
                          ncol = ncol(sink),
                          rowMaj = rowMaj(sink),
-                         dimnames = dimnames(sink))
+                         dimnames = dimnames(sink),
+                         chunksize = chunksize(sink))
     } else {
       # NOTE: Advanced usage with non-default extent and offset
       matter::matter_mat(data = data,
@@ -34,16 +44,18 @@ matterWrite <- function(data, sink) {
                          rowMaj = rowMaj(sink),
                          dimnames = dimnames(sink),
                          offset = sink@offset,
-                         extent = extent(sink))
+                         extent = extent(sink),
+                         chunksize = chunksize(sink))
     }
   } else if (is.array(data)) {
-    if (is.na(sink@offset) & is.na(extent(sink))) {
+    if (is.null(sink@offset) & is.null(extent(sink))) {
       matter::matter_arr(data = data,
                          datamode = datamode(sink),
                          paths = paths(sink),
                          filemode = filemode(sink),
                          dim = dim(sink),
-                         dimnames = dimnames(sink))
+                         dimnames = dimnames(sink),
+                         chunksize = chunksize(sink))
     } else {
       # NOTE: Advanced usage with non-default extent and offset
       matter::matter_arr(data = data,
@@ -53,7 +65,8 @@ matterWrite <- function(data, sink) {
                          dim = dim(sink),
                          dimnames = dimnames(sink),
                          offset = sink@offset,
-                         extent = extent(sink))
+                         extent = extent(sink),
+                         chunksize = chunksize(sink))
     }
   } else {
     stop("Cannot write object of class '", class(data), "' to a matter file")

@@ -23,13 +23,7 @@ setMethod("dimnames", "matterArraySeed", function(x) dimnames(x@matter))
 ###
 
 .subset_matterArraySeed_as_array <- function(seed, index) {
-  # NOTE: Need special case for when all elements of index are NULL because
-  #       of how subsetting is implemented for matter objects
-  missing_idx <- S4Vectors:::sapply_isNULL(index)
-  if (all(missing_idx)) {
-    return(seed@matter[])
-  }
-  DelayedArray:::subset_by_Nindex(seed@matter, index)
+  matterRead(seed@matter, index)
 }
 
 #' @importMethodsFrom DelayedArray subset_seed_as_array
@@ -48,6 +42,7 @@ setMethod("subset_seed_as_array", "matterArraySeed",
 #       back.
 #' @export
 matterArraySeed <- function(matter) {
+  stopifnot(is(matter, "matter"))
   if (is(matter, "matter") &
       !is(matter, "matter_mat") && !is(matter, "matter_arr")) {
     stop("Only matter_mat and matter_arr instances are currently supported")

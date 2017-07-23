@@ -12,19 +12,13 @@
 
 #' @export
 getMatterDumpFile <- function(for.use = FALSE) {
-  # stopifnot(for.use)
-  # paths <- tempfile(fileext = ".bin")
-  # result <- file.create(paths)
-  # if (!result) {
-  #   stop("error creating file")
-  # }
-  # paths
   if (!S4Vectors::isTRUEorFALSE(for.use)) {
     stop("'for.use' must be TRUE or FALSE")
   }
   file <- try(.get_dump_specfile(), silent = TRUE)
-  if (is(file, "try-error"))
+  if (is(file, "try-error")) {
     file <- .get_dump_autofile(increment = for.use)
+  }
   file
 }
 
@@ -67,8 +61,12 @@ normalize_dump_paths <- function(paths) {
     stop(wmsg("'paths' must be a non-empty string specifying the paths ",
               "to a new or existing matter file(s)"))
   if (!file.exists(paths)) {
-    # TODO: Check files successfully created
-    file.create(paths)
+    ok <- file.create(paths)
+    if (!all(ok)) {
+      stop(wmsg("failed to create file(s): '", paste0(paths[!ok],
+                                                      collapse = "', '"),
+                "'"), call. = FALSE)
+    }
   }
   vapply(paths, tools::file_path_as_absolute, character(1L), USE.NAMES = FALSE)
 }
@@ -137,7 +135,10 @@ getMatterDumpDir <- function() {
   counter <- .get_dump_files_global_counter(increment = increment)
   file <- file.path(getMatterDumpDir(), sprintf("auto%05d.bin", counter))
   if (!file.exists(file)) {
-    file.create(file)
+    ok <- file.create(file)
+    if (!ok) {
+      stop(wmsg("failed to create file '", file, "'"), call. = FALSE)
+    }
   }
   file
 }
