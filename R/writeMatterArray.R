@@ -58,11 +58,9 @@ setMethod("dimnames", "matterRealizationSink",
           }
 )
 setGeneric("rowMaj", function(x) standardGeneric("rowMaj"))
-#' @export
 setMethod("rowMaj", "matterRealizationSink", function(x) x@rowMaj)
 # NOTE: No offset() generic in order to avoid clash with stats::offset()
 setGeneric("extent", function(x) standardGeneric("extent"))
-#' @export
 setMethod("extent", "matterRealizationSink", function(x) x@extent)
 
 # TODO: Investigate the possiblity to write the dimnames to the matter file.

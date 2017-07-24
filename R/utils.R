@@ -6,6 +6,7 @@
 ###
 
 #' @include writeMatterArray.R
+#' @keywords internal
 
 ### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ### Wrappers around matter constructor/writer and reader functions
