@@ -8,6 +8,7 @@
 \alias{matterArraySeed}
 
 \alias{dim,matterArraySeed-method}
+\alias{dimnames,matterArraySeed-method}
 \alias{subset_seed_as_array,matterArraySeed-method}
 
 % matterArray and matterMatrix
@@ -69,7 +70,7 @@
     \item \link{DelayedArray-utils} for common operations on
     \link{DelayedArray} objects.
 
-    \item \code{\link{writematterArray}} for writting an array-like object
+    \item \code{\link{writeMatterArray}} for writting an array-like object
     to a matter file.
 
     \item \link{matter-dump-management} for controlling the location of

@@ -5,6 +5,14 @@
 \alias{matterRealizationSink}
 
 \alias{dimnames,matterRealizationSink-method}
+\alias{chunksize,matterRealizationSink-method}
+\alias{datamode,matterRealizationSink-method}
+\alias{dim,matterRealizationSink-method}
+\alias{dimnames,matterRealizationSink-method}
+\alias{extent,matterRealizationSink-method}
+\alias{filemode,matterRealizationSink-method}
+\alias{paths,matterRealizationSink-method}
+\alias{rowMaj,matterRealizationSink-method}
 \alias{write_to_sink,array,matterRealizationSink-method}
 
 \alias{coerce,matterRealizationSink,matterArraySeed-method}
@@ -73,8 +81,8 @@
   and the performance of the disk, \code{writeMatterArray} can take a long
   time to complete. Use \code{verbose=TRUE} to see its progress.
 
-  Use \code{\link{setMatterDumpFile}} and \code{\link{setMatterDumpName}} to
-  control the location of automatically created matter datasets.
+  Use \code{\link{setMatterDumpFile}} to control the location of automatically
+  created matter datasets.
 }
 
 \value{
@@ -126,7 +134,7 @@ x <- matrix(runif(10000), ncol = 10, dimnames = list(NULL, LETTERS[1:10]))
 X <- writeMatterArray(x)
 X
 
-# Dealyed operations are realised before writing to disk
+# Delayed operations are realised before writing to disk
 y <- DelayedArray(x) + 100
 Y <- writeMatterArray(y)
 Y
