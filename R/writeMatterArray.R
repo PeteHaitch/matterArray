@@ -75,7 +75,7 @@ matterRealizationSink <-
     } else {
       paths <- normalize_dump_paths(paths)
     }
-    appendDatasetCreationToMatterDumpLog(paths, dim, length, datamode)
+    appendDatasetCreationToMatterDumpLog(paths, dim, datamode)
     if (is.null(dimnames)) {
       dimnames <- vector("list", length(dim))
     } else {

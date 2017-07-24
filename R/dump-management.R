@@ -221,12 +221,11 @@ init_matter_dataset_creation_global_counter <- function() {
 # NOTE: Use a lock mechanism so is safe to use in the context of parallel
 #       execution.
 #' @export
-appendDatasetCreationToMatterDumpLog <- function(paths, dim, length, datamode) {
+appendDatasetCreationToMatterDumpLog <- function(paths, dim, datamode) {
   logfile <- get_matter_dump_logfile()
   locked_path <- lock_file(logfile)
   on.exit(unlock_file(logfile))
   counter <- .get_dataset_creation_global_counter(increment = TRUE)
-  if (is.null(dim) == 1L) dim <- c(length, 1L)
   dims <- paste0(dim, collapse = "x")
   for (path in paths) {
     cat(as.character(Sys.time()), counter,
